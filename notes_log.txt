@@ -1,1 +1,4 @@
-1. Setting up with
+1. Setting up npm, git and prettier.
+2. Log into MongoDB Atals and create new cluster.
+3. Setting up db 
+4. Storing 
