@@ -265,7 +265,7 @@ Creating ApiResponse.js, ApiError.js
     videoSchema.plugin(mongooseAggregatePaginate)
     ```
 
-5. We'll use `bcrypt` to hash password and `JWT` (jsonwebtoken) for tokens
+5. We'll use `bcrypt` to hash password and `JWT` (jsonwebtoken) for tokens.
     ```
     npm i bcrypt jsonwebtoken
     ```
@@ -289,3 +289,52 @@ Creating ApiResponse.js, ApiError.js
     ```
 
 8. Token
+
+## Uploading Files
+1. We'll use [cloudinary](cloudinary.com) and [multer](https://github.com/expressjs/multer#readme).
+    ```
+    npm i cloudinary multer
+    ```
+2. Setting up `Cloudinary`
+    Create a `cloundinary.js` file in `utils`, then import v2 from cloudinary as cloudinary and configure it accordingly.
+    ```
+    cloudinary.config({ 
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+        api_key: process.env.CLOUDINARY_API_KEY, 
+        api_secret: process.env.CLOUDINARY_API_SECRET 
+    });
+    ```
+    Creating Function in `cloudinary.js` to upload file :
+    ```
+    const uploadOnCloudinary = async (localFilePath) => {
+        try{
+            if (!localFilePath) return null
+            const response = await cloudinary.uploader.upload(localFilePath, {
+                resource_type: "auto"
+            })
+            console.log("File uploaded successfully", response.url)
+            return response
+
+        } catch(error) {
+            fs.unlinkSync(localFilePath)  // To remove file even if it hasn't been uploaded.
+        }
+    }
+    ```
+
+3. Setting Up `multer`
+    Create `multer.middleware.js` in `middlewares`, We'll be storing file temporarily in `public/temp`.
+    ```
+    import multer from "multer"
+
+    const storage = multer.diskStorage({
+        destination: function (req, file, cb) {
+            cb(null, '/tmp/my-uploads')
+        },
+        filename: function (req, file, cb) {
+
+            cb(null, file.originalname) // Storing file temporary with original name but this can lead to overriding file if user upload multiple files with same name.
+        }
+    })
+
+    export const upload = multer({ storage: storage })
+    ```
