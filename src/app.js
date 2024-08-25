@@ -18,4 +18,13 @@ app.use(express.static("public")) //  for serving files from the public director
 
 app.use(cookieParser()) // Cookie parsing for handling cookies in requests
 
+
+// Routes import
+import userRouter from './routes/user.routes.js'
+
+// Routes declaration
+// app.use("/users", userRouter) // for http://localhost:8080/users 
+app.use("/api/v1/users", userRouter) // since it is a api it is better to be routed as api
+
+
 export { app }

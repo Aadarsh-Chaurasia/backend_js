@@ -196,7 +196,7 @@ app.use(cookieParser()) // Cookie parsing for handling cookies in requests
     ```
     const asyncHandler = (requestHandler) => (req, res, next) =>{
         try{
-            await requestHandler(req, res, next)
+            return await requestHandler(req, res, next)
         } catch (err) {
             res.status(err.code || 500).json({
                 success: false,
@@ -208,12 +208,13 @@ app.use(cookieParser()) // Cookie parsing for handling cookies in requests
     2. By using Promises resolve: 
     ```
     const asyncHandler = (requestHandler) => {
-        (req, res, next) => {
+        return (req, res, next) => {
             Promise.resolve(requestHandler(req, res, next))
             .catch((err) => next(err))
         }
     }
     ```
+    `asyncHandler` is a `higher order function` that is accepting a callback and returning it's resolution.
 
 ## Custom Error and API Handling 
 
@@ -338,3 +339,49 @@ Creating ApiResponse.js, ApiError.js
 
     export const upload = multer({ storage: storage })
     ```
+
+## Creating Controllers and routers
+
+1. Create `user.controller.js` in `src/controllers`.
+    We will create a `registerUser` function to register user but for now it'll just return `json` response and wrap it in `asyncHandler`.
+    ```
+    import {asyncHandler} from '../utils/asyncHandler.js'
+
+    const registerUser = asyncHandler(async (req, res) => {
+        res.status(200).json({
+            message: 'ok'
+        })
+    })
+    export {registerUser}
+    ```
+
+2. Now We'll define all the routes for the user in `user.routes.js` in `src/routes`.
+    ```
+    import {Router} from "express";
+
+    const router = Router();
+
+    export default router
+    ```
+
+3. Now we'll be adding /users route to our app in app.js using app.use()
+    ```
+    // Routes import
+    import userRouter from './rotes/user.routes.js'
+
+    // Routes declaration
+    app.use("/api/v1/users", userRouter) // for http://localhost:8080/api/v1/users 
+    ```
+
+4. Now whenever `api/v1/users` is visited, userRouter will be called so we will update our `user.router.js` to handle that to route to registerUser.
+    ```
+    // Routing to http:localhost/api/v1/users/register
+    router.route("/register").post(registerUser)
+    ```
+
+5. User controller is all set checking if everything works fine !
+```
+npm run dev
+// Output: MongoDB connected !! DB HOST: cluster0-shard-00-00.xxxxx.mongodb.net
+// Server running at port: 8080
+```
