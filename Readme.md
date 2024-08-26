@@ -385,3 +385,80 @@ npm run dev
 // Output: MongoDB connected !! DB HOST: cluster0-shard-00-00.xxxxx.mongodb.net
 // Server running at port: 8080
 ```
+
+## Registering User
+
+1. Updating `registerUser` function in `user.controller.js` Getting user details from api call
+    ```
+    const {fullName, email, username, password } = req.body
+    ```
+
+2. `Validating` user details and checking if user already exists.
+    ```
+    if ([fullName, email, username, password].some((field) => field?.trim() === "")) {
+        throw new ApiError(400, "All fields are required")
+    }
+
+    // check if user already exists: username, email
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+    if (existedUser) {
+        throw new ApiError(409, "User with email or username already exists")
+    }
+    ```
+
+3. `Upload` `avatar` and `cover image` to `cloudinary`.
+    ```
+    const avatarLocalPath = req.files?.avatar[0]?.path;
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path
+    }
+    if (!avatarLocalPath) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+
+    // uploading to cloudinary
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    let coverImage;
+    if(coverImageLocalPath !== ""){
+        coverImage = await uploadOnCloudinary(coverImageLocalPath)
+    }
+    else{
+        coverImage = ""
+    }
+
+    if (!avatar) {
+        throw new ApiError(400, "Avatar file is required")
+    }
+    ```
+
+4. `create user object` - create entry in db AND remove `password` and `refresh token` field from `response`.
+    ```
+    const user = await User.create({
+        fullName,
+        avatar: avatar.url,
+        coverImage: coverImage?.url || "",
+        email, 
+        password,
+        username: username.toLowerCase()
+    })
+
+    const createdUser = await User.findById(user._id).select(
+        "-password -refreshToken"
+    )
+    ```
+
+6. check for `user` creation and return `response`.
+    ```
+    if (!createdUser) {
+        throw new ApiError(500, "Something went wrong while registering the user")
+    }
+
+    // Returning response
+    return res.status(201).json(
+        new ApiResponse(200, createdUser, "User registered Successfully")
+    )
+    ```
+    
